@@ -189,7 +189,21 @@
   LIFECYCLE_HOOKS.forEach(function (hook) {
     console.log('LIFECYCLE_HOOKS');
     stratas[hook] = mergeHook;
-  }); // 合并配置选项
+  });
+
+  function mergeAssets(parentVal, childVal) {
+    var res = Object.create(parentVal);
+
+    if (childVal) {
+      for (var key in childVal) {
+        res[key] = childVal[key];
+      }
+    }
+
+    return res;
+  }
+
+  stratas.components = mergeAssets; // 合并配置选项
 
   function mergeOptions(parent, child) {
     console.log(parent);
@@ -914,6 +928,10 @@
   function initAssetRegisters(Vue) {
     ASSETS_TYPE.forEach(function (type) {
       Vue[type] = function (id, definition) {
+        console.log(id);
+        console.log(definition);
+        console.log(type);
+
         if (type == 'component') {
           definition = this.options._base.extend(definition);
         }
@@ -923,19 +941,34 @@
     });
   }
 
+  var cid = 0;
   function initExtend(Vue) {
-    Vue.extend = function () {};
+    Vue.extend = function (extendOptions) {
+      console.log(extendOptions);
+
+      var Sub = function VueComponent(options) {
+        this._init(options);
+      };
+
+      Sub.cid = cid++;
+      Sub.prototype = Object.create(this.prototype);
+      Sub.prototype.constructor = Sub;
+      Sub.options = mergeOptions(this.options, extendOptions);
+      return Sub;
+    };
   }
 
   function initGlobalAPI(Vue) {
     Vue.options = {};
-    initMixin$1(Vue);
+    initMixin$1(Vue); // 初始化 组件 指令 过滤器
+
     ASSETS_TYPE.forEach(function (type) {
       Vue.options[type + 's'] = {};
     });
     Vue.options._base = Vue;
-    initAssetRegisters(Vue);
     initExtend(Vue); //注册extend
+
+    initAssetRegisters(Vue);
   }
 
   function Vue(options) {

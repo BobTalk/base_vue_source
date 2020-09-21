@@ -192,6 +192,7 @@
   }); // 合并配置选项
 
   function mergeOptions(parent, child) {
+    console.log(parent);
     var options = {};
 
     for (var key in parent) {
@@ -812,9 +813,10 @@
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
-      var vm = this; // 用户传入的 与全局合并 option 千万别写错了
+      var vm = this; // 用户传入的 与全局合并 options 千万别写错了
 
-      vm.$options = mergeOptions(vm.constructor.option, options);
+      console.log(vm.constructor);
+      vm.$options = mergeOptions(vm.constructor.options, options);
       callHook(vm, 'beforeCreate'); // 初始化状态
 
       initState(vm);
@@ -902,6 +904,7 @@
     Vue.mixin = function (mixin) {
       // this => Vue
       // 如何实现两个对象的合并
+      console.log(this);
       this.options = mergeOptions(this.options, mixin);
     };
   }

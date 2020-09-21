@@ -7,8 +7,9 @@ import {nextTick} from './utils/next-tick.js';
 export function initMixin(Vue) { 
     Vue.prototype._init = function (options) {
         const vm = this
-        // 用户传入的 与全局合并 option 千万别写错了
-        vm.$options = mergeOptions(vm.constructor.option, options)
+        // 用户传入的 与全局合并 options 千万别写错了
+        console.log(vm.constructor)
+        vm.$options = mergeOptions(vm.constructor.options, options)
         callHook(vm, 'beforeCreate')
         // 初始化状态
         initState(vm)

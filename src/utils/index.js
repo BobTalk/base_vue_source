@@ -53,6 +53,7 @@ LIFECYCLE_HOOKS.forEach(hook => {
 })
 // 合并配置选项
 export function mergeOptions(parent, child) { 
+    console.log(parent)
     const options = {}
     for (let key in parent) { 
         mergeField(key)

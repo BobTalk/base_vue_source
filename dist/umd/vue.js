@@ -795,14 +795,16 @@
 
     if (typeof tag === 'string') {
       // tag 有可能是组件 普通元素
-      // 十实例化组件
+      // 实例化组件
       if (createComponent(vnode)) {
+        //   返回真实DOM
         return vnode.componentInstance.$el;
       }
 
       vnode.el = document.createElement(tag);
       updateProps(vnode);
       children && children.forEach(function (child) {
+        // 递归创建儿子节点 将儿子节点插入到父节点上
         return vnode.el.appendChild(createElm(child));
       });
     } else {

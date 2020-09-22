@@ -15,10 +15,16 @@ export function createElement(vm, tag, data = {}, ...children) {
     }
 }
 function createComponent(vm, tag, data, key, children, Ctor) { 
-    let constructorFn;
+    let constructorFn = Ctor;
     if (isObject(Ctor)) { 
         // 调用extend.js中的extend
         constructorFn = vm.$options._base.extend(Ctor)
+    }
+    data.hook = {
+        init(vnode) {
+            let child = vnode.componentInstance =  new constructorFn({_isComponent: true})
+            child.$mount()
+        }
     }
     let cid  = constructorFn && constructorFn.cid
     return vnode(`vue-component-${cid}-${tag}`, data, key, undefined, {

@@ -752,7 +752,13 @@
   }();
 
   function patch(oldVnode, vnode) {
-    console.log(oldVnode, vnode); // 判断是更新还是渲染
+    console.log(oldVnode, vnode);
+
+    if (!oldVnode) {
+      // 组件模块 创建虚拟节点
+      return createElm(vnode);
+    } // 判断是更新还是渲染
+
 
     var isRealElement = oldVnode.nodeType;
 
@@ -766,6 +772,20 @@
     }
   }
 
+  function createComponent(vnode) {
+    console.log(vnode);
+    var i = vnode.data;
+
+    if ((i = i.hook) && (i = i.init)) {
+      i(vnode);
+    } // 存在 组件
+
+
+    if (vnode.componentInstance) {
+      return true;
+    }
+  }
+
   function createElm(vnode) {
     var tag = vnode.tag,
         children = vnode.children,
@@ -774,6 +794,12 @@
         text = vnode.text;
 
     if (typeof tag === 'string') {
+      // tag 有可能是组件 普通元素
+      // 十实例化组件
+      if (createComponent(vnode)) {
+        return vnode.componentInstance.$el;
+      }
+
       vnode.el = document.createElement(tag);
       updateProps(vnode);
       children && children.forEach(function (child) {
@@ -887,18 +913,26 @@
     } else {
       // 组件
       var Ctor = vm.$options.components[tag];
-      return createComponent(vm, tag, data, key, children, Ctor);
+      return createComponent$1(vm, tag, data, key, children, Ctor);
     }
   }
 
-  function createComponent(vm, tag, data, key, children, Ctor) {
-    var constructorFn;
+  function createComponent$1(vm, tag, data, key, children, Ctor) {
+    var constructorFn = Ctor;
 
     if (isObject(Ctor)) {
       // 调用extend.js中的extend
       constructorFn = vm.$options._base.extend(Ctor);
     }
 
+    data.hook = {
+      init: function init(vnode) {
+        var child = vnode.componentInstance = new constructorFn({
+          _isComponent: true
+        });
+        child.$mount();
+      }
+    };
     var cid = constructorFn && constructorFn.cid;
     return vnode("vue-component-".concat(cid, "-").concat(tag), data, key, undefined, {
       constructorFn: constructorFn,

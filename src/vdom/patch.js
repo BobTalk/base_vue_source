@@ -1,5 +1,10 @@
 export function patch(oldVnode, vnode) {
     console.log(oldVnode, vnode)
+    if (!oldVnode) { 
+        // 组件模块 创建虚拟节点
+        return createElm(vnode)
+    }
+   
     // 判断是更新还是渲染
     const isRealElement = oldVnode.nodeType
     if (isRealElement) { 
@@ -11,10 +16,25 @@ export function patch(oldVnode, vnode) {
         return el; //供mount函数使用
     }
 }
- 
+function createComponent(vnode) {
+    console.log(vnode)
+    let i = vnode.data
+    if ((i = i.hook) && (i = i.init)) { 
+        i(vnode)
+    }
+    // 存在 组件
+    if (vnode.componentInstance) { 
+        return true
+    }
+ }
 function createElm(vnode) { 
     let {tag, children, key, data, text } = vnode
     if (typeof tag === 'string') { 
+        // tag 有可能是组件 普通元素
+        // 十实例化组件
+        if (createComponent(vnode)) { 
+            return vnode.componentInstance.$el
+        }
         vnode.el = document.createElement(tag)
         updateProps(vnode)
         children && children.forEach(child => { 

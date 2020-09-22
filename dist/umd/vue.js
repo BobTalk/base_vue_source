@@ -239,12 +239,11 @@
     return options;
   }
   var isReservedTag = function isReservedTag(tagName) {
-    var str = "p ,div, span, input, button, h1, h5, textarea";
+    var str = "p, div, span, input, button, h1, h2, h3, h4, h5, textarea, hr, select";
     var obj = {};
     str.split(',').forEach(function (tag) {
       obj[tag.trim()] = true;
     });
-    console.log(obj[tagName]);
     return obj[tagName];
   };
 
@@ -896,14 +895,11 @@
     var constructorFn;
 
     if (isObject(Ctor)) {
-      console.log(vm); // 调用extend.js
-
+      // 调用extend.js中的extend
       constructorFn = vm.$options._base.extend(Ctor);
     }
 
     var cid = constructorFn && constructorFn.cid;
-    console.dir(constructorFn);
-    console.log(tag);
     return vnode("vue-component-".concat(cid, "-").concat(tag), data, key, undefined, {
       constructorFn: constructorFn,
       children: children

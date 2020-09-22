@@ -17,7 +17,7 @@
     </div>
     <script src="/dist/umd/vue.js"></script>
     <script>
-         Vue.component('my-component1', {
+         Vue.component('my-component', {
             template: `<div>component</div>`
         })
         let vm = new Vue({
@@ -27,8 +27,8 @@
                     test: { name: { hq: 'lll' } }
                 }
             },
-            components:{'my-component': {
-                template: `<div>component</div>`
+            components:{'my-component1': {
+                template: `<div>component1</div>`
             }}
         })
         // console.log(vm.test.name.hq = 'beijing1')

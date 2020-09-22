@@ -94,10 +94,10 @@ export function mergeOptions(parent, child) {
     return options
 }
 export const isReservedTag = (tagName) =>{ 
-    let str = `p,div,span,input,button,h1,h5,textarea`
+    let str = `p ,div, span, input, button, h1, h5, textarea`
     let obj = {}
     str.split(',').forEach(tag => { 
-        obj[tag] = true
+        obj[tag.trim()] = true
     })
     console.log(obj[tagName])
     return obj[tagName]

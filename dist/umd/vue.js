@@ -239,10 +239,10 @@
     return options;
   }
   var isReservedTag = function isReservedTag(tagName) {
-    var str = "p,div,span,input,button,h1,h5,textarea";
+    var str = "p ,div, span, input, button, h1, h5, textarea";
     var obj = {};
     str.split(',').forEach(function (tag) {
-      obj[tag] = true;
+      obj[tag.trim()] = true;
     });
     console.log(obj[tagName]);
     return obj[tagName];

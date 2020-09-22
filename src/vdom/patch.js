@@ -17,7 +17,7 @@ function createElm(vnode) {
     if (typeof tag === 'string') { 
         vnode.el = document.createElement(tag)
         updateProps(vnode)
-        children.forEach(child => { 
+        children && children.forEach(child => { 
             return vnode.el.appendChild(createElm(child))
         })
     } else { 

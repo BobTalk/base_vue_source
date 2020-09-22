@@ -238,6 +238,15 @@
 
     return options;
   }
+  var isReservedTag = function isReservedTag(tagName) {
+    var str = "p,div,span,input,button,h1,h5,textarea";
+    var obj = {};
+    str.split(',').forEach(function (tag) {
+      obj[tag] = true;
+    });
+    console.log(obj[tagName]);
+    return obj[tagName];
+  };
 
   var oldArrayMethods = Array.prototype; // value.__proto__ = arrayMethods
   // arrayMethods.__proto__ = oldArrayMethods
@@ -768,7 +777,7 @@
     if (typeof tag === 'string') {
       vnode.el = document.createElement(tag);
       updateProps(vnode);
-      children.forEach(function (child) {
+      children && children.forEach(function (child) {
         return vnode.el.appendChild(createElm(child));
       });
     } else {
@@ -862,45 +871,68 @@
     Vue.prototype.$nextTick = nextTick;
   }
 
-  function createElement(tag) {
-    var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    console.log(tag);
-    console.log(data);
-
-    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-      children[_key - 2] = arguments[_key];
-    }
-
-    console.log(children);
+  function createElement(vm, tag) {
+    var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     var key = data.key;
 
     if (key) {
       delete data.key;
     }
 
-    return vnode(tag, data, key, children, undefined);
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
+    }
+
+    if (isReservedTag(tag)) {
+      return vnode(tag, data, key, children, undefined);
+    } else {
+      // 组件
+      var Ctor = vm.$options.components[tag];
+      return createComponent(vm, tag, data, key, children, Ctor);
+    }
   }
-  function createTextNode(text) {
+
+  function createComponent(vm, tag, data, key, children, Ctor) {
+    var constructorFn;
+
+    if (isObject(Ctor)) {
+      console.log(vm); // 调用extend.js
+
+      constructorFn = vm.$options._base.extend(Ctor);
+    }
+
+    var cid = constructorFn && constructorFn.cid;
+    console.dir(constructorFn);
+    console.log(tag);
+    return vnode("vue-component-".concat(cid, "-").concat(tag), data, key, undefined, {
+      constructorFn: constructorFn,
+      children: children
+    });
+  } // 文本节点
+
+
+  function createTextNode(vm, text) {
     return vnode(undefined, undefined, undefined, undefined, text);
   }
 
-  function vnode(tag, data, key, children, text) {
+  function vnode(tag, data, key, children, text, componentOptions) {
     return {
       tag: tag,
       data: data,
       key: key,
       children: children,
-      text: text
+      text: text,
+      componentOptions: componentOptions
     };
   }
 
   function renderMixin(Vue) {
     Vue.prototype._c = function () {
-      return createElement.apply(void 0, arguments);
+      return createElement.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
     };
 
     Vue.prototype._v = function (text) {
-      return createTextNode(text);
+      return createTextNode(this, text);
     };
 
     Vue.prototype._s = function (val) {
@@ -950,10 +982,11 @@
         this._init(options);
       };
 
-      Sub.cid = cid++;
       Sub.prototype = Object.create(this.prototype);
       Sub.prototype.constructor = Sub;
+      Sub.cid = cid++;
       Sub.options = mergeOptions(this.options, extendOptions);
+      console.dir(Sub);
       return Sub;
     };
   }

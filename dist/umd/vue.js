@@ -769,6 +769,93 @@
       parentEle.insertBefore(el, oldEle.nextSibling);
       parentEle.removeChild(oldEle);
       return el; //供mount函数使用
+    } else {
+      // diff 标签不一致 直接替换
+      if (oldVnode.tag != vnode.tag) {
+        // createElm() 方法把虚拟节点跟真实节点关联起来
+        oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+      }
+
+      if (!oldVnode.tag) {
+        // 文本的情况
+        if (oldVnode.text != vnode.text) {
+          oldVnode.el.textContent = vnode.text;
+        }
+      } // 标签一致而且不是文本 属性不一致
+
+
+      var _el = vnode.el = oldVnode.el;
+
+      updateProps(vnode, oldVnode.data); // 子元素比对
+
+      var oldChild = oldVnode.children || [];
+      var newChild = vnode.children || [];
+
+      if (oldChild.length > 0 && newChild.length > 0) {
+        // 新旧都存在子集
+        updateChildren(_el, oldChild, newChild);
+      } else if (newChild.length) {
+        // 只有新节点
+        for (var i = 0; i < newChild.length; i++) {
+          var child = newChild[i];
+
+          _el.appendChild(createElm(child));
+        }
+      } else if (oldChild.length) {
+        // 只有旧节点 
+        _el.innerHTML = '';
+      }
+    }
+  }
+
+  function isSomeVnode(oldVnode, newVnode) {
+    return oldVnode.tag == newVnode.tag && oldVnode.key == newVnode.key;
+  } // 子节点比对
+
+
+  function updateChildren(el, oldChild, newChild) {
+    // 采用双指针方式
+    var oldStartIndex = 0;
+    var oldStartVnode = oldChild[0];
+    var oldENdIndex = oldChild.length - 1;
+    var oldEndVnode = oldChild[oldENdIndex];
+    var newStartIndex = 0;
+    var newStartVnode = newChild[0];
+    var newENdIndex = newChild.length - 1;
+    var newEndVnode = newChild[newENdIndex]; // 在比较过程中 只要有一方结束 则比对结束 
+
+    while (oldStartIndex <= oldENdIndex && newStartIndex <= newENdIndex) {
+      if (isSomeVnode(oldStartVnode, newStartVnode)) {
+        // 从头开始比较
+        // 如果节点tag一致 则比对属性
+        patch(oldStartVnode, newStartVnode);
+        oldStartVnode = oldChild[++oldStartIndex];
+        newStartVnode = newChild[++newStartIndex];
+      } else if (isSomeVnode(oldEndVnode, newEndVnode)) {
+        // 从后开始比较
+        patch(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChild[--oldENdIndex];
+        newEndVnode = newChild[++newENdIndex];
+      } else if (isSomeVnode(oldStartVnode, newEndVnode)) {
+        // 头移尾
+        patch(oldStartVnode, newEndVnode);
+        parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChild(++oldStartIndex);
+        newEndVnode = newChild[--newENdIndex];
+      }
+    }
+
+    if (newStartIndex <= newENdIndex) {
+      for (var i = newStartIndex; i <= newENdIndex; i++) {
+        // parent.appendChild(createElm(newChild[i]))
+        var flag = newChild[newENdIndex + 1] == null ? null : newChild[newENdIndex + 1].el; // if (!flag) {
+        //     parent.insertBefore(newChild[i], null) // null 等价 appendChild
+        // } else { 
+        //     parent.insertBefore(newChild[i], flag)
+        // }
+
+        parent.insertBefore(newChild[i], flag);
+      }
     }
   }
 
@@ -784,7 +871,8 @@
     if (vnode.componentInstance) {
       return true;
     }
-  }
+  } //  虚拟节点跟真实节点关联起来
+
 
   function createElm(vnode) {
     var tag = vnode.tag,
@@ -815,18 +903,34 @@
   }
 
   function updateProps(vnode) {
+    var oldProps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var newProps = vnode.data || {};
     var el = vnode.el;
+    var newStyle = newProps.style || {};
+    var oldStyle = oldProps.style || {}; // 样式对比
 
-    for (var key in newProps) {
-      if (key == 'style') {
+    for (var key in oldStyle) {
+      if (!newStyle[key]) {
+        el.style[key] = ''; // 删除多余样式
+      }
+    } // diff 老的属性中新的没有 则删除
+
+
+    for (var _key in oldProps) {
+      if (!newProps[_key]) {
+        el.removeAttribute(_key);
+      }
+    }
+
+    for (var _key2 in newProps) {
+      if (_key2 == 'style') {
         for (var styleName in newProps.style) {
           el.style[styleName] = newProps.style[styleName];
         }
-      } else if (key == 'class') {
+      } else if (_key2 == 'class') {
         el.className = newProps["class"];
       } else {
-        el.setAttribute(key, newProps[key]);
+        el.setAttribute(_key2, newProps[_key2]);
       }
     }
   }

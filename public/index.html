@@ -7,8 +7,8 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
     <meta name="google" value="notranslate">
-    <title>Document</title>
-    <script src=""></script>
+    <title>myVue</title>
+    <script src="/dist/umd/vue.js"></script>
 </head>
 
 <body>
@@ -16,7 +16,7 @@
         <my-component></my-component>
         <my-component1></my-component1>
     </div>
-    <script src="/dist/umd/vue.js"></script>
+   
     <script>
          Vue.component('my-component', {
             template: `<div>componentVue</div>`
@@ -34,7 +34,17 @@
                         name: 'childrenComp'
                     }
                 },
-                template: `<div>{{name}}</div>`,
+                template: `<div>{{name}} <test></test></div>`,
+                components: {
+                    "test": {
+                        data(){
+                            return {
+                                name: 'childrenComp-child'
+                            }
+                        },
+                        template: `<div> {{name}} </div>`
+                    }
+                }
             }},
             
         })

@@ -1,7 +1,7 @@
 import initMixin from './mixin.js';
 import initAssetRegisters from './assets.js';
-import { ASSETS_TYPE } from './const.js';
-import initExtend from './extend.js';
+import { ASSETS_TYPE } from './const.js'; //VUE中常见关键字（component filter directive......）
+import initExtend from './extend.js'; // 继承
 export function initGlobalAPI(Vue) { 
     Vue.options = {}
     initMixin(Vue)

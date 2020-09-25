@@ -44,6 +44,7 @@ export function patch(oldVnode, vnode) {
         }
     }
 }
+// 标签相同 并且 key也相同
 function isSomeVnode(oldVnode, newVnode) {
     return (oldVnode.tag == newVnode.tag) && (oldVnode.key == newVnode.key)
  }
@@ -58,8 +59,22 @@ function updateChildren(el, oldChild, newChild) {
     let newStartVnode = newChild[0]
     let newENdIndex = newChild.length - 1
     let newEndVnode = newChild[newENdIndex]
+    const makeIndexByKey = (children) => { 
+        let map = {}
+        children.forEach((item, index) => { 
+            if(!item.key) return
+            map[item.key] = index // 根据key与index关联
+        })
+        return map
+    }
+    let map = makeIndexByKey(oldChild)
     // 在比较过程中 只要有一方结束 则比对结束 
     while (oldStartIndex <= oldENdIndex && newStartIndex <= newENdIndex) { 
+        if (!oldStartVnode) {
+            oldStartVnode = oldChild[++oldStartIndex] // 指针往后走一步
+        } else if (!oldEndVnode) { 
+            oldEndVnode = oldChild[--oldENdIndex] // 指针往前走一步
+        }
         if (isSomeVnode(oldStartVnode, newStartVnode)) {  // 从头开始比较
             // 如果节点tag一致 则比对属性
             patch(oldStartVnode, newStartVnode)
@@ -69,12 +84,30 @@ function updateChildren(el, oldChild, newChild) {
             patch(oldEndVnode, newEndVnode)
             oldEndVnode = oldChild[--oldENdIndex]
             newEndVnode = newChild[++newENdIndex]
-        } else if (isSomeVnode(oldStartVnode, newEndVnode)) { 
+        } else if (isSomeVnode(oldStartVnode, newEndVnode)) {
             // 头移尾
             patch(oldStartVnode, newEndVnode)
             parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling)
             oldStartVnode = oldChild(++oldStartIndex)
             newEndVnode = newChild[--newENdIndex]
+        } else if (isSomeVnode(oldEndVnode, newStartVnode)) {
+            // 尾移头
+            patch(oldEndVnode, newStartVnode)
+            parent.insertBefore(oldEndVnode.el, oldStartVnode.el)
+            oldEndVnode = oldChild[--oldENdIndex]
+            newStartVnode = newChild[++newStartIndex]
+        } else { 
+            // 乱序 根据节点key做一个映射表
+           let moveIndex= map[newStartVnode.key]
+            if (!moveIndex) {
+                parent.insertBefore(createElm(newStartVnode), oldStartVnode.el)
+            } else { //如果在映射表中查找到 直接移走并只为undefined
+                let moveVnode = oldChild[moveIndex] // 需要移动的元素
+                oldChild[moveIndex] = undefined
+                parent.insertBefore(moveVnode.el, oldStartVnode.el)
+                patch(moveVnode, newStartVnode)
+            }
+            newStartVnode = newChild[++newStartIndex]
         }
     }
     if (newStartIndex <= newENdIndex) { 
@@ -87,6 +120,14 @@ function updateChildren(el, oldChild, newChild) {
             //     parent.insertBefore(newChild[i], flag)
             // }
             parent.insertBefore(newChild[i], flag)
+        }
+    }
+    if (oldStartIndex <= oldENdIndex) { 
+        for (let i = oldStartIndex; i <= oldENdIndex; i++) { 
+            let child = oldChild[i]
+            if (child != undefined) { 
+                parent.removeChild(child.el)
+            }
         }
     }
 }

@@ -806,7 +806,7 @@
         _el.innerHTML = '';
       }
     }
-  }
+  } // 标签相同 并且 key也相同
 
   function isSomeVnode(oldVnode, newVnode) {
     return oldVnode.tag == newVnode.tag && oldVnode.key == newVnode.key;
@@ -822,9 +822,26 @@
     var newStartIndex = 0;
     var newStartVnode = newChild[0];
     var newENdIndex = newChild.length - 1;
-    var newEndVnode = newChild[newENdIndex]; // 在比较过程中 只要有一方结束 则比对结束 
+    var newEndVnode = newChild[newENdIndex];
+
+    var makeIndexByKey = function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (item, index) {
+        if (!item.key) return;
+        map[item.key] = index; // 根据key与index关联
+      });
+      return map;
+    };
+
+    var map = makeIndexByKey(oldChild); // 在比较过程中 只要有一方结束 则比对结束 
 
     while (oldStartIndex <= oldENdIndex && newStartIndex <= newENdIndex) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldChild[++oldStartIndex]; // 指针往后走一步
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldChild[--oldENdIndex]; // 指针往前走一步
+      }
+
       if (isSomeVnode(oldStartVnode, newStartVnode)) {
         // 从头开始比较
         // 如果节点tag一致 则比对属性
@@ -842,6 +859,28 @@
         parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
         oldStartVnode = oldChild(++oldStartIndex);
         newEndVnode = newChild[--newENdIndex];
+      } else if (isSomeVnode(oldEndVnode, newStartVnode)) {
+        // 尾移头
+        patch(oldEndVnode, newStartVnode);
+        parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChild[--oldENdIndex];
+        newStartVnode = newChild[++newStartIndex];
+      } else {
+        // 乱序 根据节点key做一个映射表
+        var moveIndex = map[newStartVnode.key];
+
+        if (!moveIndex) {
+          parent.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        } else {
+          //如果在映射表中查找到 直接移走并只为undefined
+          var moveVnode = oldChild[moveIndex]; // 需要移动的元素
+
+          oldChild[moveIndex] = undefined;
+          parent.insertBefore(moveVnode.el, oldStartVnode.el);
+          patch(moveVnode, newStartVnode);
+        }
+
+        newStartVnode = newChild[++newStartIndex];
       }
     }
 
@@ -855,6 +894,16 @@
         // }
 
         parent.insertBefore(newChild[i], flag);
+      }
+    }
+
+    if (oldStartIndex <= oldENdIndex) {
+      for (var _i = oldStartIndex; _i <= oldENdIndex; _i++) {
+        var child = oldChild[_i];
+
+        if (child != undefined) {
+          parent.removeChild(child.el);
+        }
       }
     }
   }
@@ -952,7 +1001,16 @@
     Vue.prototype._update = function (vNode) {
       console.log(vNode);
       var vm = this;
-      vm.$el = patch(vm.$el, vNode); //使用虚拟节点渲染真实dom
+      var prevVnode = vNode._vnode; //  保存第一次渲染的虚拟节点
+
+      vNode._vnode = vNode;
+
+      if (!prevVnode) {
+        // 第一次渲染
+        vm.$el = patch(vm.$el, vNode); //使用虚拟节点渲染真实dom
+      } else {
+        vm.$el = patch(prevVnode, vNode);
+      }
     };
   }
   function callHook(vm, hook) {
